@@ -20,6 +20,7 @@
 
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -111,7 +112,7 @@ h1, h2, h3, h4 {
   cursor: pointer;
   transition: all 0.2s ease;
   gap: 8px;
-  min-height: 48px; /* Touch target accessibility */
+  min-height: 48px;
 }
 
 .btn:active {
@@ -298,4 +299,137 @@ h1, h2, h3, h4 {
 
 .safety-points li {
   margin-bottom: 8px;
+}
+
+/* ================= ADMIN OVERSEER DASHBOARD ================= */
+.secret-admin-trigger {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.secret-admin-trigger:active {
+  transform: scale(1.15);
+}
+
+.admin-panel-dialog {
+  background: #110d21;
+  border: 1px solid var(--accent-cyan);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.25);
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-cyan);
+  font-size: 0.95rem;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-success);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-success);
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-tab-btn {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-tab-btn.active {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+.admin-tab-view {
+  display: none;
+}
+
+.admin-tab-view.active {
+  display: block;
+}
+
+/* Telemetry Table */
+.telemetry-table-wrapper {
+  overflow-x: auto;
+}
+
+.telemetry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.telemetry-table th {
+  text-align: left;
+  padding: 8px;
+  color: var(--accent-cyan);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.telemetry-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.status-badge-ok {
+  color: var(--accent-success);
+  font-weight: 700;
+}
+
+.status-badge-warn {
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.status-badge-cheat {
+  color: var(--accent-danger);
+  font-weight: 700;
+  background: rgba(255, 23, 68, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.admin-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media(min-width: 480px) {
+  .admin-controls-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
