@@ -3,16 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0e0a1a">
-  <title>Hunter vs Hider — GPS Hide & Seek</title>
+  <meta name="theme-color" content="#0a0714">
+  <title>Hunter vs Hider — Tactical Sonar Hide & Seek</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
   <!-- App Styles -->
   <link rel="stylesheet" href="css/styles.css">
@@ -37,16 +34,16 @@
       <header class="landing-header">
         <div class="logo">
           <!-- Secret Admin Trigger: Tap 5 times -->
-          <span class="logo-icon secret-admin-trigger" title="Hunter vs Hider">📡</span>
+          <span class="logo-icon secret-admin-trigger" title="Tactical Sonar">📡</span>
           <span class="logo-text">HUNTER<span class="highlight">vs</span>HIDER</span>
         </div>
         <button id="btn-quick-play" class="btn btn-secondary btn-sm">Sign In</button>
       </header>
 
       <main class="landing-hero">
-        <div class="hero-badge">⚡ Real-World Urban Hide & Seek</div>
-        <h1 class="hero-title">Turn Your City Into A Real Life <span class="text-gradient">Battle Map</span></h1>
-        <p class="hero-subtitle">Hide in the shadows or hunt down your friends. Real live GPS navigation, pet radar abilities, and 5-second proximity catches.</p>
+        <div class="hero-badge">⚡ Tactical Sonar Urban Stealth</div>
+        <h1 class="hero-title">Real World <span class="text-gradient">Sonar Tag</span></h1>
+        <p class="hero-subtitle">Heads-up outdoor hide & seek. No screen-watching—track targets with timed satellite snapshot sweeps, directional sonar, and heartbeat proximity audio.</p>
         
         <div class="hero-cta-group">
           <button id="btn-landing-play" class="btn btn-primary btn-xl pulse-btn">Play Now — Free</button>
@@ -58,41 +55,41 @@
             <span class="preview-emoji">🦅</span>
             <div class="preview-meta">
               <strong>Hunter Hawk</strong>
-              <span>Thermal Ping Radar</span>
+              <span>Target Snapshot Intel</span>
             </div>
           </div>
           <div class="preview-card float-rev">
             <span class="preview-emoji">🦊</span>
             <div class="preview-meta">
               <strong>Hider Fox</strong>
-              <span>Hunter Proximity Sense</span>
+              <span>Deploy Ghost Decoys</span>
             </div>
           </div>
         </div>
 
         <!-- How It Works Section -->
         <section class="how-it-works">
-          <h2 class="section-title">How It Works</h2>
+          <h2 class="section-title">Tactical Rules</h2>
           <div class="steps-grid">
             <div class="step-card">
               <span class="step-number">01</span>
               <h3>Form a Squad</h3>
-              <p>Create a room, share your 4-letter code, and lock in your ready status.</p>
+              <p>Create a room, share your 4-letter code, and ready up with companions.</p>
             </div>
             <div class="step-card">
               <span class="step-number">02</span>
               <h3>The Wheel Chooses</h3>
-              <p>The randomized wheel picks the Hider. Everyone else hunts.</p>
+              <p>The randomized spinner wheel picks the Hider. Everyone else hunts.</p>
             </div>
             <div class="step-card">
               <span class="step-number">03</span>
-              <h3>60s Head Start</h3>
-              <p>Hiders run! Hunters' screens lock until the stealth phase concludes.</p>
+              <h3>60s Stealth Phase</h3>
+              <p>Hiders run into position! The radar stays pitch dark during stealth.</p>
             </div>
             <div class="step-card">
               <span class="step-number">04</span>
-              <h3>Pet Radar & Catches</h3>
-              <p>Hunters get approximate area hints. Hold within 20m for 5s to catch!</p>
+              <h3>Timed Satellite Sweeps</h3>
+              <p>Every 60s, a sweep drops a frozen intel snapshot. Hold 20m for 5s to catch!</p>
             </div>
           </div>
         </section>
@@ -118,8 +115,8 @@
         </header>
 
         <div class="menu-hero-card">
-          <h2>Ready to Hunt?</h2>
-          <p>Create a local game or enter your squad's room code.</p>
+          <h2>Deploy to the Field</h2>
+          <p>Create a local tactical session or enter your squad's room code.</p>
           <div class="menu-actions">
             <button id="btn-menu-create" class="btn btn-primary btn-lg">Create New Room</button>
             <button id="btn-menu-join" class="btn btn-secondary btn-lg">Join With Code</button>
@@ -162,12 +159,11 @@
         </header>
 
         <div class="lobby-boundary-picker" id="host-settings-panel">
-          <label for="select-boundary">Play Area Limit:</label>
-          <select id="select-boundary">
-            <option value="0">No Boundary (Unlimited)</option>
-            <option value="250">Small Park (250m Radius)</option>
-            <option value="500" selected>Standard Campus (500m Radius)</option>
-            <option value="1000">Large City Zone (1km Radius)</option>
+          <label for="select-scan-interval">Satellite Sweep Interval:</label>
+          <select id="select-scan-interval">
+            <option value="45">Fast Action (Sweep every 45s)</option>
+            <option value="60" selected>Standard Match (Sweep every 60s)</option>
+            <option value="90">Tactical Stealth (Sweep every 90s)</option>
           </select>
         </div>
 
@@ -192,8 +188,11 @@
       </div>
     </section>
 
-    <!-- Screen 5: Active Game Map Screen -->
+    <!-- Screen 5: Active Tactical Radar Game Screen -->
     <section id="screen-game" class="screen">
+      <!-- Edge Glow Threat Indicator -->
+      <div id="threat-overlay" class="threat-overlay"></div>
+
       <!-- HUD Top Bar -->
       <header class="game-hud">
         <div class="hud-role-pill" id="hud-role-badge">HIDER</div>
@@ -202,17 +201,23 @@
         <button id="btn-game-leave" class="btn btn-xs btn-outline">Exit</button>
       </header>
 
+      <!-- Satellite Sweep Countdown Tracker -->
+      <div class="satellite-scan-bar">
+        <span class="scan-pulse-dot"></span>
+        <span>Satellite Sweep In: <strong id="scan-countdown-text">60s</strong></span>
+      </div>
+
       <!-- Headstart Countdown Cover (for Hunters) -->
       <div id="headstart-cover" class="headstart-overlay hidden">
         <div class="headstart-card">
           <span class="stealth-icon">⏳</span>
           <h2>Hiders Are Scrambling!</h2>
-          <p>Hiders have a 60-second head start. Wait for stealth phase to end.</p>
+          <p>Radar is dark. Wait for the 60-second stealth phase to conclude.</p>
           <div class="big-countdown" id="headstart-seconds">60</div>
         </div>
       </div>
 
-      <!-- Map Container -->
+      <!-- Tactical Radar Viewport -->
       <div id="map-view"></div>
 
       <!-- Proximity Catch Meter -->
@@ -235,9 +240,10 @@
               <strong id="hud-pet-name">Hunter Hawk</strong>
               <span id="hud-pet-level" class="badge-level">Lv 1</span>
             </div>
-            <div class="pet-desc-line" id="hud-pet-ability">Ping cooldown: 30s</div>
+            <div class="pet-desc-line" id="hud-pet-ability">Pings approximate snapshot</div>
           </div>
-          <button id="btn-trigger-pet" class="btn btn-primary btn-sm">Scan Radar</button>
+          <button id="btn-trigger-pet" class="btn btn-primary btn-sm">Ping Radar</button>
+          <button id="btn-trigger-decoy" class="btn btn-outline btn-sm hidden">Deploy Decoy 🎭</button>
         </div>
       </div>
     </section>
@@ -269,7 +275,7 @@
       </div>
     </section>
 
-    <!-- Screen 7: Pet Shop Screen (Debug Button Cleaned) -->
+    <!-- Screen 7: Pet Shop Screen -->
     <section id="screen-shop" class="screen">
       <div class="shop-container">
         <header class="shop-header">
@@ -315,9 +321,9 @@
         <div class="modal-icon">⚠️</div>
         <h3>Play Safely in Public</h3>
         <ul class="safety-points">
-          <li><strong>Never run into roadways.</strong> Always look up from your screen.</li>
+          <li><strong>Never run into roadways.</strong> Keep your eyes up.</li>
           <li><strong>Respect private property.</strong> Stay in designated public parks or campuses.</li>
-          <li>Keep your device battery charged and use Screen Wake Lock.</li>
+          <li>Listen for audio cues and vibrations instead of staring down.</li>
           <li>GPS readings are deleted immediately when a match concludes.</li>
         </ul>
         <button id="btn-accept-safety" class="btn btn-primary btn-block">I Agree & Understand</button>
@@ -341,7 +347,6 @@
           <button class="admin-tab-btn" data-tab="economy">Secret Coins</button>
         </div>
 
-        <!-- Tab 1: Live Anti-Cheat Telemetry -->
         <div id="admin-tab-telemetry" class="admin-tab-view active">
           <div class="telemetry-table-wrapper">
             <table class="telemetry-table">
@@ -362,17 +367,15 @@
           </div>
         </div>
 
-        <!-- Tab 2: God-Mode Game Controls -->
         <div id="admin-tab-controls" class="admin-tab-view">
           <div class="admin-controls-grid">
             <button id="btn-admin-force-start" class="btn btn-secondary btn-sm">⚡ Force Start Match</button>
             <button id="btn-admin-force-end" class="btn btn-secondary btn-sm">🛑 Force End Round</button>
             <button id="btn-admin-skip-stealth" class="btn btn-secondary btn-sm">⏩ Skip Headstart Timer</button>
-            <button id="btn-admin-reveal-all" class="btn btn-secondary btn-sm">👁️ Reveal Hider Positions</button>
+            <button id="btn-admin-trigger-scan" class="btn btn-secondary btn-sm">📡 Force Satellite Scan</button>
           </div>
         </div>
 
-        <!-- Tab 3: Secret Economy -->
         <div id="admin-tab-economy" class="admin-tab-view">
           <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Add coins directly to your account secretly without showing debug UI:</p>
           <div class="admin-controls-grid">
@@ -385,12 +388,10 @@
     </div>
   </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  
   <!-- App JS Modules -->
   <script type="module" src="pets/petCatalog.js"></script>
   <script type="module" src="pets/petShop.js"></script>
+  <script type="module" src="js/audio.js"></script>
   <script type="module" src="js/network.js"></script>
   <script type="module" src="js/map.js"></script>
   <script type="module" src="js/spinner.js"></script>
