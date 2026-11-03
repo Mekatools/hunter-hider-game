@@ -3,6 +3,7 @@ import { initPetShop } from '../pets/petShop.js';
 import { network } from './network.js';
 import { SpinnerWheel } from './spinner.js';
 import { game } from './game.js';
+import { audio } from './audio.js';
 
 let currentRoom = null;
 let spinner = null;
@@ -42,12 +43,13 @@ function updateProfileDisplays() {
 }
 
 function setupNavigation() {
-  // Landing Actions
   document.getElementById('btn-landing-play')?.addEventListener('click', () => {
+    audio.init();
     showScreen('screen-menu');
   });
 
   document.getElementById('btn-quick-play')?.addEventListener('click', () => {
+    audio.init();
     showScreen('screen-menu');
   });
 
@@ -59,7 +61,6 @@ function setupNavigation() {
     document.getElementById('modal-safety').classList.add('hidden');
   });
 
-  // Menu Actions
   document.getElementById('btn-menu-create')?.addEventListener('click', () => {
     const code = generateRoomCode();
     joinOrHostRoom(code, true);
@@ -79,7 +80,6 @@ function setupNavigation() {
     showScreen('screen-profile');
   });
 
-  // Back Buttons
   document.querySelectorAll('.btn-back').forEach(btn => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.target || 'screen-menu';
@@ -87,7 +87,6 @@ function setupNavigation() {
     });
   });
 
-  // Profile Save
   document.getElementById('btn-profile-save')?.addEventListener('click', () => {
     const newName = document.getElementById('profile-name-input').value.trim();
     if (newName) {
@@ -99,7 +98,6 @@ function setupNavigation() {
     }
   });
 
-  // Join Form Submit
   document.getElementById('btn-submit-join')?.addEventListener('click', () => {
     const code = document.getElementById('join-code-input').value.trim().toUpperCase();
     const name = document.getElementById('join-name-input').value.trim();
@@ -116,16 +114,14 @@ function setupNavigation() {
     joinOrHostRoom(code, false);
   });
 
-  // Game HUD Exit
   document.getElementById('btn-game-leave')?.addEventListener('click', () => {
-    if (confirm('Leave current round?')) {
+    if (confirm('Leave current session?')) {
       game.stop();
       network.disconnect();
       showScreen('screen-menu');
     }
   });
 
-  // Results back button
   document.getElementById('btn-results-menu')?.addEventListener('click', () => {
     showScreen('screen-menu');
   });
@@ -171,12 +167,12 @@ function setupLobby() {
 
   const btnStart = document.getElementById('btn-lobby-start');
   btnStart?.addEventListener('click', () => {
-    const boundaryRadius = parseInt(document.getElementById('select-boundary').value, 10);
-    network.send('host_start_game', { boundaryRadius });
+    const scanInterval = parseInt(document.getElementById('select-scan-interval').value, 10) || 60;
+    network.send('host_start_game', { scanInterval });
   });
 
   document.getElementById('btn-copy-code')?.addEventListener('click', () => {
-    const shareText = `Join my Hunter vs Hider room! Code: ${currentRoom}`;
+    const shareText = `Join my Tactical Sonar squad! Code: ${currentRoom}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText);
       alert('Room code copied to clipboard!');
@@ -233,11 +229,10 @@ function setupNetworkHandlers() {
   network.on('game_start', (data) => {
     showScreen('screen-game');
     const myRole = data.roles[network.playerId] || 'hunter';
-    game.start(myRole, data.boundary, data.initialLat, data.initialLng);
+    game.start(myRole, data.initialLat, data.initialLng);
 
     if (myRole === 'hunter') {
-      const headstartCover = document.getElementById('headstart-cover');
-      headstartCover.classList.remove('hidden');
+      document.getElementById('headstart-cover').classList.remove('hidden');
     }
   });
 
@@ -255,12 +250,26 @@ function setupNetworkHandlers() {
     const formatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     const timerDisplay = document.getElementById('hud-timer-display');
     if (timerDisplay) timerDisplay.textContent = formatted;
+
+    const scanText = document.getElementById('scan-countdown-text');
+    if (scanText) scanText.textContent = `${data.scanCountdown}s`;
+
+    if (data.scanCountdown <= 3 && data.scanCountdown > 0) {
+      audio.playScanWarning();
+    }
   });
 
-  network.on('radar_ping', (data) => {
-    if (game.map) {
-      game.map.displayRadarHint(data.lat, data.lng, data.radius);
+  network.on('satellite_sweep_pulse', (data) => {
+    audio.playSonarPing();
+    if (game.map && data.snapshots) {
+      data.snapshots.forEach(s => {
+        game.map.addSnapshotIntel(s.lat, s.lng, s.isDecoy);
+      });
     }
+  });
+
+  network.on('proximity_heartbeat', (data) => {
+    game.handleHeartbeatProximity(data.closestMeters);
   });
 
   network.on('catch_proximity_update', (data) => {
@@ -275,17 +284,11 @@ function setupNetworkHandlers() {
     document.getElementById('results-reason').textContent = data.reason;
 
     const user = getUserState();
-    const coinsEarned = data.coinsEarned[network.playerId] || 10;
+    const coinsEarned = data.coinsEarned[network.playerId] || 15;
     document.getElementById('results-coins-amount').textContent = coinsEarned;
 
     user.coins += coinsEarned;
     user.stats.roundsPlayed += 1;
-    if (data.catches && data.catches[network.playerId]) {
-      user.stats.catches += data.catches[network.playerId];
-    }
-    if (data.roles[network.playerId] === 'hider') {
-      user.stats.totalHideTimeSeconds += data.hideDurationSeconds || 0;
-    }
     saveUserState(user);
     updateProfileDisplays();
 
