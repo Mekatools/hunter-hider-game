@@ -1,4 +1,4 @@
-// Cloudflare Worker and Authoritative Durable Object Room Server with Anti-Cheat
+// Cloudflare Worker and Authoritative Durable Object Room Server with Tactical Sonar & Anti-Cheat
 
 const ADMIN_SERVER_PIN = '7777';
 
@@ -31,15 +31,16 @@ export class GameRoom {
     this.env = env;
     this.storage = state.storage;
     
-    // In-memory runtime state
-    this.sessions = new Map(); // WebSocket -> session object
+    this.sessions = new Map();
     this.hostId = null;
     this.adminSockets = new Set();
     this.gameState = 'lobby'; // 'lobby' | 'headstart' | 'active' | 'finished'
     this.headstartSeconds = 60;
     this.roundSeconds = 600;
-    this.boundary = { lat: 0, lng: 0, radius: 0 };
+    this.scanInterval = 60;
+    this.scanCountdown = 60;
     this.proximityTracking = new Map();
+    this.activeDecoys = new Set(); // playerIds with armed decoys
     this.intervalTimer = null;
   }
 
@@ -119,7 +120,8 @@ export class GameRoom {
 
       case 'host_start_game':
         if (session.id === this.hostId && this.gameState === 'lobby') {
-          this.boundary.radius = msg.payload.boundaryRadius || 0;
+          this.scanInterval = msg.payload.scanInterval || 60;
+          this.scanCountdown = this.scanInterval;
           this.startGameFlow();
         }
         break;
@@ -127,16 +129,23 @@ export class GameRoom {
       case 'location_update':
         this.processLocationWithAntiCheat(session, msg.payload);
         this.checkAuthoritativeCatches();
+        this.checkHeartbeatProximities();
         this.broadcastAdminTelemetry();
+        break;
+
+      case 'deploy_decoy':
+        if (session.role === 'hider') {
+          this.activeDecoys.add(session.id);
+        }
         break;
 
       case 'request_radar_ping':
         if (session.role === 'hunter' && this.gameState === 'active') {
-          this.computeRadarHintForHunter(session, ws);
+          this.triggerSatelliteSweep(true, ws);
         }
         break;
 
-      // ================= ADMIN & ANTI-CHEAT COMMANDS =================
+      // Admin & Anti-Cheat Commands
       case 'admin_auth':
         if (msg.payload.pin === ADMIN_SERVER_PIN) {
           this.adminSockets.add(ws);
@@ -158,7 +167,7 @@ export class GameRoom {
 
       case 'admin_force_end':
         if (this.adminSockets.has(ws)) {
-          this.endGame('hunters', 'Match terminated by Overseer Admin.');
+          this.endGame('hunters', 'Match ended by Overseer Admin.');
         }
         break;
 
@@ -168,14 +177,9 @@ export class GameRoom {
         }
         break;
 
-      case 'admin_reveal_all':
+      case 'admin_trigger_scan':
         if (this.adminSockets.has(ws)) {
-          // Reveal exact hider coordinates to the admin
-          for (let s of this.sessions.values()) {
-            if (s.role === 'hider' && s.lat && s.lng) {
-              this.sendTo(ws, 'radar_ping', { lat: s.lat, lng: s.lng, radius: 10 });
-            }
-          }
+          this.triggerSatelliteSweep(false);
         }
         break;
 
@@ -195,7 +199,6 @@ export class GameRoom {
     }
   }
 
-  // Anti-Cheat Engine: Detects instant teleports, impossible running speeds, and mock GPS signatures
   processLocationWithAntiCheat(session, payload) {
     const now = Date.now();
     const newLat = payload.lat;
@@ -210,14 +213,10 @@ export class GameRoom {
 
       session.speedKmh = speedKmh;
 
-      // Anti-Cheat Rule 1: Human sprint limit is ~35-44 km/h
-      // If moving faster than 38 km/h or teleporting > 150m in seconds, flag cheat
       if (speedKmh > 38 && distMeters > 50) {
         session.isCheating = true;
         session.cheatReason = `Teleport (${speedKmh.toFixed(0)} km/h)`;
-      } 
-      // Anti-Cheat Rule 2: Fake GPS apps reporting absolute zero accuracy
-      else if (accuracy === 0) {
+      } else if (accuracy === 0) {
         session.isCheating = true;
         session.cheatReason = 'Mock GPS Detected';
       } else {
@@ -273,11 +272,6 @@ export class GameRoom {
     }
 
     const hostSession = Array.from(this.sessions.values()).find(s => s.id === this.hostId);
-    if (hostSession && hostSession.lat) {
-      this.boundary.lat = hostSession.lat;
-      this.boundary.lng = hostSession.lng;
-    }
-
     const winnerIndex = playerArray.findIndex(p => p.id === hiders[0].id);
 
     this.broadcast('spinner_start', {
@@ -291,7 +285,6 @@ export class GameRoom {
       this.headstartSeconds = 60;
       this.broadcast('game_start', {
         roles: rolesMap,
-        boundary: this.boundary,
         initialLat: hostSession ? hostSession.lat : 0,
         initialLng: hostSession ? hostSession.lng : 0
       });
@@ -311,14 +304,83 @@ export class GameRoom {
         }
       } else if (this.gameState === 'active') {
         this.roundSeconds--;
-        this.broadcast('round_tick', { remaining: this.roundSeconds });
+        this.scanCountdown--;
+
+        this.broadcast('round_tick', {
+          remaining: this.roundSeconds,
+          scanCountdown: this.scanCountdown
+        });
+
+        // Trigger scheduled satellite sweep
+        if (this.scanCountdown <= 0) {
+          this.triggerSatelliteSweep(false);
+          this.scanCountdown = this.scanInterval;
+        }
+
         this.checkAuthoritativeCatches();
+        this.checkHeartbeatProximities();
 
         if (this.roundSeconds <= 0) {
           this.endGame('hiders', 'Time expired! Hiders successfully remained hidden.');
         }
       }
     }, 1000);
+  }
+
+  // Generates frozen snapshot blips (with decoy displacement if armed)
+  triggerSatelliteSweep(isManualPing = false, targetWs = null) {
+    const hiders = Array.from(this.sessions.values()).filter(s => s.role === 'hider' && s.lat && s.lng);
+    const snapshots = [];
+
+    hiders.forEach(h => {
+      let lat = h.lat;
+      let lng = h.lng;
+      let isDecoy = false;
+
+      // Check if this hider deployed a decoy
+      if (this.activeDecoys.has(h.id)) {
+        isDecoy = true;
+        this.activeDecoys.delete(h.id);
+        // Displace snapshot 70-100m away
+        const angle = Math.random() * 2 * Math.PI;
+        const offsetDist = 80;
+        lat += (offsetDist / 111111) * Math.cos(angle);
+        lng += (offsetDist / (111111 * Math.cos(h.lat * (Math.PI / 180)))) * Math.sin(angle);
+      }
+
+      snapshots.push({ lat, lng, isDecoy });
+    });
+
+    const payload = { snapshots, isManual: isManualPing };
+
+    if (targetWs) {
+      this.sendTo(targetWs, 'satellite_sweep_pulse', payload);
+    } else {
+      // Send to all hunters
+      for (let [ws, s] of this.sessions.entries()) {
+        if (s.role === 'hunter') {
+          this.sendTo(ws, 'satellite_sweep_pulse', payload);
+        }
+      }
+    }
+  }
+
+  // Rhythmic heartbeat distance monitoring
+  checkHeartbeatProximities() {
+    if (this.gameState !== 'active') return;
+
+    for (let [ws, s] of this.sessions.entries()) {
+      let closest = 999;
+
+      for (let other of this.sessions.values()) {
+        if (other.id !== s.id && other.role !== s.role && other.lat && s.lat) {
+          const d = this.haversineMeters(s.lat, s.lng, other.lat, other.lng);
+          if (d < closest) closest = d;
+        }
+      }
+
+      this.sendTo(ws, 'proximity_heartbeat', { closestMeters: closest });
+    }
   }
 
   checkAuthoritativeCatches() {
@@ -328,9 +390,7 @@ export class GameRoom {
     const hiders = [];
 
     for (const [ws, s] of this.sessions.entries()) {
-      if (!s.lat || !s.lng) continue;
-      // Low-accuracy or detected cheaters cannot trigger catches
-      if (s.accuracy > 50 || s.isCheating) continue;
+      if (!s.lat || !s.lng || s.accuracy > 50 || s.isCheating) continue;
 
       if (s.role === 'hunter') hunters.push({ ws, session: s });
       else if (s.role === 'hider') hiders.push({ ws, session: s });
@@ -395,44 +455,17 @@ export class GameRoom {
     }
   }
 
-  computeRadarHintForHunter(hunterSession, hunterWs) {
-    const hiders = Array.from(this.sessions.values()).filter(s => s.role === 'hider' && s.lat && s.lng);
-    if (hiders.length === 0) return;
-
-    const target = hiders[0];
-    const petLevel = hunterSession.petState.petLevels ? (hunterSession.petState.petLevels[hunterSession.petState.hunterPet] || 1) : 1;
-    const baseRadius = 120;
-    const radius = Math.max(45, baseRadius - (petLevel * 15));
-
-    const angle = Math.random() * 2 * Math.PI;
-    const offsetMeters = Math.random() * (radius * 0.6);
-    const offsetLat = (offsetMeters / 111111) * Math.cos(angle);
-    const offsetLng = (offsetMeters / (111111 * Math.cos(target.lat * (Math.PI / 180)))) * Math.sin(angle);
-
-    this.sendTo(hunterWs, 'radar_ping', {
-      lat: target.lat + offsetLat,
-      lng: target.lng + offsetLng,
-      radius: radius
-    });
-  }
-
   endGame(winner, reason) {
     this.gameState = 'finished';
     clearInterval(this.intervalTimer);
 
     const coinsEarned = {};
     for (const s of this.sessions.values()) {
-      if (winner === 'hunters' && s.role === 'hunter') {
-        coinsEarned[s.id] = 40;
-      } else if (winner === 'hiders' && s.role === 'hider') {
-        coinsEarned[s.id] = 60;
-      } else {
-        coinsEarned[s.id] = 15;
-      }
+      coinsEarned[s.id] = (winner === 'hunters' && s.role === 'hunter') ? 45 : 20;
     }
 
     const rolesMap = {};
-    for (const s of this.sessions.values()) {
+    for (let s of this.sessions.values()) {
       rolesMap[s.id] = s.role;
     }
 
@@ -441,8 +474,7 @@ export class GameRoom {
       reason,
       coinsEarned,
       roles: rolesMap,
-      duration: 600 - this.roundSeconds,
-      hideDurationSeconds: 600 - this.roundSeconds
+      duration: 600 - this.roundSeconds
     });
 
     this.cleanup();
@@ -451,6 +483,7 @@ export class GameRoom {
   cleanup() {
     clearInterval(this.intervalTimer);
     this.proximityTracking.clear();
+    this.activeDecoys.clear();
     this.gameState = 'lobby';
   }
 
