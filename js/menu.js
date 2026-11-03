@@ -7,11 +7,15 @@ import { audio } from './audio.js';
 
 let currentRoom = null;
 let spinner = null;
+let qrScanner = null;
+let qrCodeGenerator = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupLobby();
   setupNetworkHandlers();
+  setupQRFeatures();
+  setupLeaderboard();
   updateProfileDisplays();
 
   initPetShop((updatedUser) => {
@@ -19,6 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   spinner = new SpinnerWheel('spinner-canvas');
+
+  // Check URL params for direct join link: ?join=ABCD
+  const params = new URLSearchParams(window.location.search);
+  const autoJoinCode = params.get('join');
+  if (autoJoinCode && autoJoinCode.length === 4) {
+    document.getElementById('join-code-input').value = autoJoinCode.toUpperCase();
+    showScreen('screen-join');
+  }
 });
 
 function showScreen(screenId) {
@@ -72,6 +84,11 @@ function setupNavigation() {
 
   document.getElementById('btn-menu-shop')?.addEventListener('click', () => {
     showScreen('screen-shop');
+  });
+
+  document.getElementById('btn-menu-leaderboard')?.addEventListener('click', () => {
+    renderLeaderboard('hunters');
+    showScreen('screen-leaderboard');
   });
 
   document.getElementById('btn-open-profile')?.addEventListener('click', () => {
@@ -151,7 +168,7 @@ function joinOrHostRoom(code, isHost) {
     hunterPet: user.equippedHunterPet,
     hiderPet: user.equippedHiderPet,
     petLevels: user.petLevels
-  });
+  }, isHost);
 }
 
 function setupLobby() {
@@ -172,12 +189,151 @@ function setupLobby() {
   });
 
   document.getElementById('btn-copy-code')?.addEventListener('click', () => {
-    const shareText = `Join my Tactical Sonar squad! Code: ${currentRoom}`;
+    const joinUrl = `${window.location.origin}/?join=${currentRoom}`;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareText);
-      alert('Room code copied to clipboard!');
+      navigator.clipboard.writeText(joinUrl);
+      alert('Squad link copied to clipboard!');
     }
   });
+}
+
+// QR Code Generator & Camera Scanner Features
+function setupQRFeatures() {
+  const btnShowQr = document.getElementById('btn-show-qr');
+  const modalQrCode = document.getElementById('modal-qr-code');
+  const btnCloseQr = document.getElementById('btn-close-qr-code');
+  const qrContainer = document.getElementById('qrcode-container');
+
+  btnShowQr?.addEventListener('click', () => {
+    modalQrCode.classList.remove('hidden');
+    document.getElementById('qr-code-text').textContent = currentRoom;
+    qrContainer.innerHTML = '';
+
+    const joinUrl = `${window.location.origin}/?join=${currentRoom}`;
+    if (window.QRCode) {
+      qrCodeGenerator = new window.QRCode(qrContainer, {
+        text: joinUrl,
+        width: 190,
+        height: 190,
+        colorDark: '#0e0a1a',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.M
+      });
+    }
+  });
+
+  btnCloseQr?.addEventListener('click', () => {
+    modalQrCode.classList.add('hidden');
+  });
+
+  // QR Scanner for Joiner
+  const btnOpenScanner = document.getElementById('btn-open-scanner');
+  const modalScanner = document.getElementById('modal-qr-scanner');
+  const btnCloseScanner = document.getElementById('btn-close-scanner');
+
+  btnOpenScanner?.addEventListener('click', async () => {
+    modalScanner.classList.remove('hidden');
+    if (window.Html5Qrcode) {
+      qrScanner = new window.Html5Qrcode('qr-scanner-view');
+      try {
+        await qrScanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            // Found QR Code!
+            qrScanner.stop();
+            modalScanner.classList.add('hidden');
+
+            let code = decodedText.trim().toUpperCase();
+            if (code.includes('JOIN=')) {
+              code = code.split('JOIN=')[1].substring(0, 4);
+            }
+            if (code.length === 4) {
+              document.getElementById('join-code-input').value = code;
+              document.getElementById('btn-submit-join').click();
+            } else {
+              alert(`Invalid Room QR: ${decodedText}`);
+            }
+          },
+          () => {} // frame error ignore
+        );
+      } catch (err) {
+        alert('Camera access denied or unavailable: ' + err);
+        modalScanner.classList.add('hidden');
+      }
+    }
+  });
+
+  btnCloseScanner?.addEventListener('click', () => {
+    if (qrScanner) {
+      qrScanner.stop().catch(() => {});
+    }
+    modalScanner.classList.add('hidden');
+  });
+}
+
+// Tactical Leaderboard
+function setupLeaderboard() {
+  const tabs = document.querySelectorAll('.leaderboard-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderLeaderboard(tab.dataset.tab);
+    });
+  });
+}
+
+function renderLeaderboard(category) {
+  const headers = document.getElementById('leaderboard-headers');
+  const tbody = document.getElementById('leaderboard-body');
+  if (!tbody || !headers) return;
+  tbody.innerHTML = '';
+
+  const user = getUserState();
+
+  if (category === 'hunters') {
+    headers.innerHTML = `<th>Rank</th><th>Operative</th><th>Catches</th><th>Rounds</th>`;
+    const roster = [
+      { rank: '🥇', name: 'GhostRecon', catches: 42, rounds: 50 },
+      { rank: '🥈', name: 'NightOwl', catches: 31, rounds: 38 },
+      { rank: '🥉', name: 'ShadowHawk', catches: 27, rounds: 30 },
+      { rank: '4th', name: user.name + ' (You)', catches: user.stats.catches, rounds: user.stats.roundsPlayed }
+    ].sort((a, b) => b.catches - a.catches);
+
+    roster.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.rank}</td><td><strong>${r.name}</strong></td><td>${r.catches}</td><td>${r.rounds}</td>`;
+      tbody.appendChild(tr);
+    });
+  } else if (category === 'hiders') {
+    headers.innerHTML = `<th>Rank</th><th>Operative</th><th>Stealth Time</th><th>Status</th>`;
+    const userMinutes = Math.round(user.stats.totalHideTimeSeconds / 60);
+    const roster = [
+      { rank: '🥇', name: 'PhantomFox', time: '115 min', status: 'Elite' },
+      { rank: '🥈', name: 'Viper', time: '84 min', status: 'Veteran' },
+      { rank: '🥉', name: user.name + ' (You)', time: `${userMinutes} min`, status: 'Operative' }
+    ];
+
+    roster.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.rank}</td><td><strong>${r.name}</strong></td><td>${r.time}</td><td><span class="status-badge-ok">${r.status}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  } else if (category === 'wealth') {
+    headers.innerHTML = `<th>Rank</th><th>Operative</th><th>Coins</th><th>Companions</th>`;
+    const roster = [
+      { rank: '🥇', name: 'DragonLord', coins: 1450, pets: '8/8' },
+      { rank: '🥈', name: user.name + ' (You)', coins: user.coins, pets: `${user.unlockedPets.length}/8` },
+      { rank: '🥉', name: 'SilverFang', coins: 280, pets: '3/8' }
+    ].sort((a, b) => b.coins - a.coins);
+
+    roster.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.rank}</td><td><strong>${r.name}</strong></td><td>💰 ${r.coins}</td><td>${r.pets}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
 }
 
 function setupNetworkHandlers() {
