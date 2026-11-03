@@ -1,8 +1,8 @@
 :root {
-  --bg-primary: #0e0a1a;
-  --bg-secondary: #16102b;
-  --bg-tertiary: #221a3f;
-  --bg-glass: rgba(26, 19, 48, 0.75);
+  --bg-primary: #0a0714;
+  --bg-secondary: #130e24;
+  --bg-tertiary: #1f1738;
+  --bg-glass: rgba(19, 14, 36, 0.85);
   
   --accent-primary: #7c4dff;
   --accent-primary-hover: #651fff;
@@ -57,7 +57,6 @@ body, html {
   overflow: hidden;
 }
 
-/* Screens */
 .screen {
   position: absolute;
   inset: 0;
@@ -81,7 +80,6 @@ body, html {
   z-index: 20;
 }
 
-/* Typography & Utilities */
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
   font-weight: 800;
@@ -185,7 +183,6 @@ h1, h2, h3, h4 {
   align-self: flex-start;
 }
 
-/* Forms & Inputs */
 .form-container {
   padding: 24px 20px;
   max-width: 460px;
@@ -227,7 +224,6 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.2);
 }
 
-/* Toast Reconnect Banner */
 .banner {
   position: absolute;
   top: 16px;
@@ -259,7 +255,6 @@ h1, h2, h3, h4 {
   to { transform: rotate(360deg); }
 }
 
-/* Modals */
 .modal-overlay {
   position: absolute;
   inset: 0;
@@ -301,7 +296,39 @@ h1, h2, h3, h4 {
   margin-bottom: 8px;
 }
 
-/* ================= ADMIN OVERSEER DASHBOARD ================= */
+/* QR Code Display Box */
+.qr-code-box {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  display: inline-block;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.qr-code-box img {
+  display: block;
+}
+
+/* Leaderboard Tabs & View */
+.leaderboard-tab {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.leaderboard-tab.active {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+/* Overseer Dashboard */
 .secret-admin-trigger {
   cursor: pointer;
   transition: transform 0.2s;
@@ -380,7 +407,6 @@ h1, h2, h3, h4 {
   display: block;
 }
 
-/* Telemetry Table */
 .telemetry-table-wrapper {
   overflow-x: auto;
 }
