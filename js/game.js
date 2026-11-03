@@ -1,6 +1,7 @@
 import { GameMap } from './map.js';
 import { network } from './network.js';
-import { getUserState, saveUserState, PET_CATALOG, PET_LEVELS, ACCESSORIES } from '../pets/petCatalog.js';
+import { audio } from './audio.js';
+import { getUserState, PET_CATALOG, PET_LEVELS, ACCESSORIES } from '../pets/petCatalog.js';
 
 class GameManager {
   constructor() {
@@ -8,14 +9,12 @@ class GameManager {
     this.geoWatchId = null;
     this.wakeLock = null;
     this.myRole = 'hunter';
-    this.myId = null;
-    this.radarCooldownTimer = 0;
-    this.catchTimer = null;
+    this.decoyAvailable = true;
   }
 
-  start(role, playBoundary, initialLat, initialLng) {
+  start(role, initialLat, initialLng) {
     this.myRole = role;
-    this.myId = network.playerId;
+    this.decoyAvailable = true;
 
     this.requestWakeLock();
     this.setupHUD();
@@ -24,10 +23,6 @@ class GameManager {
       this.map = new GameMap('map-view');
     }
     this.map.init(initialLat || 0, initialLng || 0);
-
-    if (playBoundary && playBoundary.radius > 0) {
-      this.map.setPlayBoundary(playBoundary.lat, playBoundary.lng, playBoundary.radius);
-    }
 
     this.startGPS();
     this.bindEvents();
@@ -63,10 +58,8 @@ class GameManager {
           }
         }
 
-        // Update local map
         this.map.updateUserPosition(latitude, longitude, accuracy);
 
-        // Send authoritative location to Durable Object
         network.send('location_update', {
           lat: latitude,
           lng: longitude,
@@ -103,16 +96,18 @@ class GameManager {
     document.getElementById('hud-pet-level').textContent = `Lv ${lvl}`;
 
     const scanBtn = document.getElementById('btn-trigger-pet');
+    const decoyBtn = document.getElementById('btn-trigger-decoy');
+
     if (this.myRole === 'hunter') {
       const mult = PET_LEVELS[lvl - 1].multiplier;
       const cd = Math.round(pet.baseCooldown / mult);
-      document.getElementById('hud-pet-ability').textContent = `Radar Cooldown: ${cd}s`;
+      document.getElementById('hud-pet-ability').textContent = `Manual Ping: ${cd}s`;
       scanBtn.style.display = 'inline-flex';
+      decoyBtn.classList.add('hidden');
     } else {
-      const mult = PET_LEVELS[lvl - 1].multiplier;
-      const range = Math.round(pet.baseWarningRange * mult);
-      document.getElementById('hud-pet-ability').textContent = `Sense Radius: ${range}m`;
+      document.getElementById('hud-pet-ability').textContent = 'Spoofs Next Satellite Ping';
       scanBtn.style.display = 'none';
+      decoyBtn.classList.remove('hidden');
     }
   }
 
@@ -120,19 +115,47 @@ class GameManager {
     const scanBtn = document.getElementById('btn-trigger-pet');
     if (scanBtn) {
       scanBtn.onclick = () => {
+        audio.playSonarPing();
         network.send('request_radar_ping');
         scanBtn.disabled = true;
-        let remaining = 20;
+        let remaining = 25;
         const itv = setInterval(() => {
           remaining--;
           scanBtn.textContent = `Cooldown (${remaining}s)`;
           if (remaining <= 0) {
             clearInterval(itv);
             scanBtn.disabled = false;
-            scanBtn.textContent = 'Scan Radar';
+            scanBtn.textContent = 'Ping Radar';
           }
         }, 1000);
       };
+    }
+
+    const decoyBtn = document.getElementById('btn-trigger-decoy');
+    if (decoyBtn) {
+      decoyBtn.onclick = () => {
+        if (!this.decoyAvailable) return;
+        this.decoyAvailable = false;
+        network.send('deploy_decoy');
+        decoyBtn.disabled = true;
+        decoyBtn.textContent = 'Decoy Armed! 🎭';
+        setTimeout(() => {
+          decoyBtn.textContent = 'Decoy Expended';
+        }, 3000);
+      };
+    }
+  }
+
+  handleHeartbeatProximity(distanceMeters) {
+    const threatOverlay = document.getElementById('threat-overlay');
+
+    if (distanceMeters <= 50) {
+      threatOverlay.classList.add('active');
+      const bpm = distanceMeters <= 20 ? 120 : (distanceMeters <= 35 ? 90 : 60);
+      audio.startHeartbeat(bpm);
+    } else {
+      threatOverlay.classList.remove('active');
+      audio.stopHeartbeat();
     }
   }
 
@@ -151,6 +174,7 @@ class GameManager {
   }
 
   stop() {
+    audio.stopHeartbeat();
     if (this.geoWatchId !== null) {
       navigator.geolocation.clearWatch(this.geoWatchId);
       this.geoWatchId = null;
