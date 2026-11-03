@@ -9,7 +9,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -36,7 +36,8 @@
       
       <header class="landing-header">
         <div class="logo">
-          <span class="logo-icon">📡</span>
+          <!-- Secret Admin Trigger: Tap 5 times -->
+          <span class="logo-icon secret-admin-trigger" title="Hunter vs Hider">📡</span>
           <span class="logo-text">HUNTER<span class="highlight">vs</span>HIDER</span>
         </div>
         <button id="btn-quick-play" class="btn btn-secondary btn-sm">Sign In</button>
@@ -107,7 +108,7 @@
       <div class="menu-container">
         <header class="menu-topbar">
           <div class="user-chip" id="menu-user-chip">
-            <span class="avatar-icon" id="user-display-pet">🦊</span>
+            <span class="avatar-icon secret-admin-trigger" id="user-display-pet">🦊</span>
             <div class="user-info">
               <span class="user-name" id="user-display-name">Runner</span>
               <span class="user-coins">💰 <strong id="user-display-coins">50</strong> coins</span>
@@ -214,7 +215,7 @@
       <!-- Map Container -->
       <div id="map-view"></div>
 
-      <!-- Proximity Catch Meter (visible when hunter is in range) -->
+      <!-- Proximity Catch Meter -->
       <div id="catch-meter" class="catch-meter hidden">
         <div class="catch-label">HOLD PROXIMITY TO CATCH!</div>
         <div class="catch-progress-track">
@@ -268,7 +269,7 @@
       </div>
     </section>
 
-    <!-- Screen 7: Pet Shop Screen -->
+    <!-- Screen 7: Pet Shop Screen (Debug Button Cleaned) -->
     <section id="screen-shop" class="screen">
       <div class="shop-container">
         <header class="shop-header">
@@ -283,10 +284,6 @@
         </div>
 
         <div id="shop-cards-list" class="shop-grid"></div>
-
-        <div class="test-coins-wrapper">
-          <button id="btn-add-test-coins" class="btn btn-outline btn-block">+100 Test Coins (Debug)</button>
-        </div>
       </div>
     </section>
 
@@ -326,6 +323,66 @@
         <button id="btn-accept-safety" class="btn btn-primary btn-block">I Agree & Understand</button>
       </div>
     </div>
+
+    <!-- SECRET ADMIN / ANTI-CHEAT COMMAND CENTER -->
+    <div id="modal-admin" class="modal-overlay hidden">
+      <div class="admin-panel-dialog">
+        <header class="admin-header">
+          <div class="admin-title">
+            <span class="live-dot"></span>
+            <strong>OVERSEER COMMAND & ANTI-CHEAT</strong>
+          </div>
+          <button id="btn-close-admin" class="btn btn-xs btn-outline">Close</button>
+        </header>
+
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" data-tab="telemetry">Live Telemetry</button>
+          <button class="admin-tab-btn" data-tab="controls">Game Control</button>
+          <button class="admin-tab-btn" data-tab="economy">Secret Coins</button>
+        </div>
+
+        <!-- Tab 1: Live Anti-Cheat Telemetry -->
+        <div id="admin-tab-telemetry" class="admin-tab-view active">
+          <div class="telemetry-table-wrapper">
+            <table class="telemetry-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Role</th>
+                  <th>Speed</th>
+                  <th>Accuracy</th>
+                  <th>Integrity Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-telemetry-body">
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No active players in room</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: God-Mode Game Controls -->
+        <div id="admin-tab-controls" class="admin-tab-view">
+          <div class="admin-controls-grid">
+            <button id="btn-admin-force-start" class="btn btn-secondary btn-sm">⚡ Force Start Match</button>
+            <button id="btn-admin-force-end" class="btn btn-secondary btn-sm">🛑 Force End Round</button>
+            <button id="btn-admin-skip-stealth" class="btn btn-secondary btn-sm">⏩ Skip Headstart Timer</button>
+            <button id="btn-admin-reveal-all" class="btn btn-secondary btn-sm">👁️ Reveal Hider Positions</button>
+          </div>
+        </div>
+
+        <!-- Tab 3: Secret Economy -->
+        <div id="admin-tab-economy" class="admin-tab-view">
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Add coins directly to your account secretly without showing debug UI:</p>
+          <div class="admin-controls-grid">
+            <button id="btn-admin-add-100" class="btn btn-primary btn-sm">+100 Secret Coins</button>
+            <button id="btn-admin-add-500" class="btn btn-primary btn-sm">+500 Secret Coins</button>
+            <button id="btn-admin-max-pets" class="btn btn-secondary btn-sm">Unlock & Max All Pets</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Leaflet JS -->
@@ -340,5 +397,6 @@
   <script type="module" src="js/game.js"></script>
   <script type="module" src="ui/landing.js"></script>
   <script type="module" src="js/menu.js"></script>
+  <script type="module" src="js/admin.js"></script>
 </body>
 </html>
