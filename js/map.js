@@ -18,9 +18,10 @@ export class GameMap {
       attributionControl: false
     }).setView([lat, lng], 17);
 
-    // OpenStreetMap high contrast dark-friendly carto tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19
+    // 100% Free OpenStreetMap standard tiles (Zero API key required)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
     this.radarHintsGroup = L.layerGroup().addTo(this.map);
