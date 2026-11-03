@@ -13,18 +13,6 @@ export function initPetShop(onStateChange) {
     });
   });
 
-  const btnTestCoins = document.getElementById('btn-add-test-coins');
-  if (btnTestCoins) {
-    btnTestCoins.addEventListener('click', () => {
-      const user = getUserState();
-      user.coins += 100;
-      saveUserState(user);
-      updateShopHeader();
-      renderShopList(onStateChange);
-      if (onStateChange) onStateChange(user);
-    });
-  }
-
   updateShopHeader();
   renderShopList(onStateChange);
 }
@@ -49,7 +37,7 @@ export function renderShopList(onStateChange) {
                        (pet.team === 'hider' && user.equippedHiderPet === pet.id);
     const level = user.petLevels[pet.id] || 1;
     const accessory = ACCESSORIES[level - 1] || '';
-    const nextLevelData = PET_LEVELS[level]; // next level cost index
+    const nextLevelData = PET_LEVELS[level];
 
     const card = document.createElement('div');
     card.className = 'shop-item-card';
