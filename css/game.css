@@ -1,0 +1,444 @@
+/* Game Map Screen */
+#screen-game {
+  overflow: hidden;
+}
+
+#map-view {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.game-hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.game-hud * {
+  pointer-events: auto;
+}
+
+.hud-role-pill {
+  background: var(--accent-primary);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.hud-role-pill.hider {
+  background: #00b0ff;
+}
+
+.hud-role-pill.hunter {
+  background: #ff3d00;
+}
+
+.hud-timer {
+  background: rgba(14, 10, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.hud-gps-pill {
+  background: rgba(14, 10, 26, 0.85);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+/* Catch Meter */
+.catch-meter {
+  position: absolute;
+  top: 70px;
+  left: 20px;
+  right: 20px;
+  z-index: 400;
+  background: rgba(14, 10, 26, 0.95);
+  border: 2px solid var(--accent-danger);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  text-align: center;
+  animation: shake 0.5s infinite;
+}
+
+.catch-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--accent-danger);
+  margin-bottom: 6px;
+}
+
+.catch-progress-track {
+  width: 100%;
+  height: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.catch-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff9100, var(--accent-danger));
+  transition: width 0.2s linear;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Floating Bottom Pet Panel */
+.hud-pet-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 14px;
+  right: 14px;
+  z-index: 400;
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.pet-card-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pet-avatar-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.pet-accessory-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 1rem;
+}
+
+.pet-stats {
+  flex: 1;
+}
+
+.pet-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-level {
+  background: var(--accent-primary);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+}
+
+.pet-desc-line {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Headstart Cover */
+.headstart-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  background: rgba(14, 10, 26, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.headstart-card {
+  max-width: 320px;
+}
+
+.stealth-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.big-countdown {
+  font-family: var(--font-heading);
+  font-size: 4.5rem;
+  font-weight: 900;
+  color: var(--accent-cyan);
+  margin-top: 16px;
+}
+
+/* Menu & Lobby Views */
+.menu-container, .lobby-container, .results-container, .shop-container {
+  padding: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.menu-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-name {
+  font-weight: 700;
+  display: block;
+  font-size: 1rem;
+}
+
+.user-coins {
+  font-size: 0.8rem;
+  color: var(--accent-gold);
+}
+
+.menu-hero-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.room-code-badge {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--accent-cyan);
+}
+
+.lobby-boundary-picker {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lobby-boundary-picker label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.player-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 24px;
+}
+
+.player-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.player-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.status-pill.ready {
+  background: rgba(0, 230, 118, 0.2);
+  color: var(--accent-success);
+}
+
+.status-pill.waiting {
+  background: rgba(255, 23, 68, 0.2);
+  color: var(--accent-danger);
+}
+
+/* Spinner Overlay */
+.spinner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 10, 26, 0.92);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-modal {
+  text-align: center;
+}
+
+.spinner-result {
+  margin-top: 14px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+}
+
+/* Pet Shop Grid */
+.shop-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.shop-tab {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-tab.active {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+.shop-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.shop-item-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shop-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shop-item-icon {
+  font-size: 2.2rem;
+}
+
+.test-coins-wrapper {
+  margin-top: 20px;
+}
+
+/* Results */
+.results-container {
+  text-align: center;
+  padding-top: 48px;
+}
+
+.result-badge-icon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+}
+
+.coins-earned-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.coins-value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+}
+
+.results-stats-box {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 28px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
