@@ -1,4 +1,5 @@
-// Cloudflare Worker and Authoritative Durable Object Room Server with Tactical Sonar & Anti-Cheat
+// Cloudflare Worker and Authoritative Durable Object Room Server
+// Validates room existence to stop phantom room joins
 
 const ADMIN_SERVER_PIN = '7777';
 
@@ -33,6 +34,7 @@ export class GameRoom {
     
     this.sessions = new Map();
     this.hostId = null;
+    this.isInitialized = false; // Strictly prevents random non-existent room joins
     this.adminSockets = new Set();
     this.gameState = 'lobby'; // 'lobby' | 'headstart' | 'active' | 'finished'
     this.headstartSeconds = 60;
@@ -40,7 +42,7 @@ export class GameRoom {
     this.scanInterval = 60;
     this.scanCountdown = 60;
     this.proximityTracking = new Map();
-    this.activeDecoys = new Set(); // playerIds with armed decoys
+    this.activeDecoys = new Set();
     this.intervalTimer = null;
   }
 
@@ -48,12 +50,47 @@ export class GameRoom {
     const url = new URL(request.url);
     const pid = url.searchParams.get('pid');
     const name = decodeURIComponent(url.searchParams.get('name') || 'Player');
+    const isHost = url.searchParams.get('isHost') === 'true';
 
     const pair = new WebSocketPair();
     const clientWs = pair[0];
     const serverWs = pair[1];
 
     serverWs.accept();
+
+    // Check 1: If room does not exist and player is NOT the creator -> Reject phantom join!
+    if (!this.isInitialized && !isHost) {
+      setTimeout(() => {
+        try {
+          serverWs.send(JSON.stringify({
+            type: 'error',
+            payload: { message: `Room "${url.searchParams.get('room')}" does not exist! Please check the code.` }
+          }));
+          serverWs.close(1008, 'Room not found');
+        } catch (e) {}
+      }, 50);
+      return new Response(null, { status: 101, webSocket: clientWs });
+    }
+
+    // Check 2: If match is already in progress -> Reject late joiners!
+    if (this.gameState !== 'lobby') {
+      setTimeout(() => {
+        try {
+          serverWs.send(JSON.stringify({
+            type: 'error',
+            payload: { message: 'This game round is already in progress!' }
+          }));
+          serverWs.close(1008, 'Game already active');
+        } catch (e) {}
+      }, 50);
+      return new Response(null, { status: 101, webSocket: clientWs });
+    }
+
+    // Initialize room when legitimate host joins
+    if (isHost && !this.isInitialized) {
+      this.isInitialized = true;
+      this.hostId = pid;
+    }
 
     const sessionData = {
       id: pid,
@@ -71,9 +108,6 @@ export class GameRoom {
     };
 
     this.sessions.set(serverWs, sessionData);
-    if (!this.hostId) {
-      this.hostId = pid;
-    }
 
     serverWs.addEventListener('message', async (event) => {
       try {
@@ -311,7 +345,6 @@ export class GameRoom {
           scanCountdown: this.scanCountdown
         });
 
-        // Trigger scheduled satellite sweep
         if (this.scanCountdown <= 0) {
           this.triggerSatelliteSweep(false);
           this.scanCountdown = this.scanInterval;
@@ -327,7 +360,6 @@ export class GameRoom {
     }, 1000);
   }
 
-  // Generates frozen snapshot blips (with decoy displacement if armed)
   triggerSatelliteSweep(isManualPing = false, targetWs = null) {
     const hiders = Array.from(this.sessions.values()).filter(s => s.role === 'hider' && s.lat && s.lng);
     const snapshots = [];
@@ -337,11 +369,9 @@ export class GameRoom {
       let lng = h.lng;
       let isDecoy = false;
 
-      // Check if this hider deployed a decoy
       if (this.activeDecoys.has(h.id)) {
         isDecoy = true;
         this.activeDecoys.delete(h.id);
-        // Displace snapshot 70-100m away
         const angle = Math.random() * 2 * Math.PI;
         const offsetDist = 80;
         lat += (offsetDist / 111111) * Math.cos(angle);
@@ -356,7 +386,6 @@ export class GameRoom {
     if (targetWs) {
       this.sendTo(targetWs, 'satellite_sweep_pulse', payload);
     } else {
-      // Send to all hunters
       for (let [ws, s] of this.sessions.entries()) {
         if (s.role === 'hunter') {
           this.sendTo(ws, 'satellite_sweep_pulse', payload);
@@ -365,7 +394,6 @@ export class GameRoom {
     }
   }
 
-  // Rhythmic heartbeat distance monitoring
   checkHeartbeatProximities() {
     if (this.gameState !== 'active') return;
 
@@ -485,6 +513,7 @@ export class GameRoom {
     this.proximityTracking.clear();
     this.activeDecoys.clear();
     this.gameState = 'lobby';
+    this.isInitialized = false;
   }
 
   haversineMeters(lat1, lon1, lat2, lon2) {
